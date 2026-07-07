@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+alembic
+psycopg2-binary
+redis
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+stripe
+httpx
+pytest
+pytest-asyncio
