@@ -1,0 +1,90 @@
+# =========================================
+# Environment variables (NEVER commit these)
+# =========================================
+.env
+.env.local
+.env.*.local
+
+# =========================================
+# Python
+# =========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+
+# Distribution / packaging
+build/
+dist/
+*.manifest
+*.spec
+
+# =========================================
+# Virtual environments
+# =========================================
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# =========================================
+# Pytest / coverage / testing
+# =========================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+
+# =========================================
+# Type checkers / linters
+# =========================================
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# =========================================
+# Alembic / local databases
+# =========================================
+*.db
+*.sqlite3
+*.sqlite3-journal
+
+# =========================================
+# Logs
+# =========================================
+*.log
+logs/
+
+# =========================================
+# Editor / OS
+# =========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# =========================================
+# Jupyter (if used for LLM/prompt experimentation)
+# =========================================
+.ipynb_checkpoints/
+
+# =========================================
+# Misc
+# =========================================
+*.bak
+*.tmp
+.env.example.local
