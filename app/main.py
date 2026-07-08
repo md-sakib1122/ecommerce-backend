@@ -1,70 +1,67 @@
-# FastAPI app init, router mounting, CORS
-"""FastAPI app instance, router includes, CORS, startup events."""
 """
-IELTS Writing Practice App — FastAPI entry point.
+E-Commerce Ordering & Payment System — FastAPI entry point.
 
 Responsibilities:
   - Create and configure the FastAPI application instance
   - Register all v1 routers under /api/v1
   - Apply CORS middleware
-  - Wire up lifestartup / shutdown)
-  - Expose a health-check endppan events (soint
+  - Wire up lifespan (startup / shutdown) — verifies DB connectivity
+  - Expose a health-check endpoint
 """
 
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-from app.config import settings
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.config import settings
+from app.db.session import engine, get_session
 from app.api.v1.router import api_router
+
 
 # ---------------------------------------------------------------------------
 # Lifespan — startup / shutdown
 # ---------------------------------------------------------------------------
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Runs once on startup (before first request) and once on shutdown.
 
     Startup:
-      - Validate critical env vars (settings raises on missing values)
-      - Initialise the Supabase service-role client
-      - (Optional) warm up LiteLLM model list / connection pool
+      - Confirm the DB engine can actually open a connection
+        (fails fast if Postgres/Redis env vars are wrong, instead of
+        the first API request mysteriously erroring)
 
     Shutdown:
-      - Cleanly close the Supabase client / any open HTTP sessions
+      - Dispose the engine's connection pool cleanly
     """
     # --- startup ---
-
-    # 2. Store it directly on the app instance!
-    app.state.supabase = supabase_client
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1")) # cheap round-trip to confirm DB is reachable
     print(f"[startup] Environment : {settings.ENV}")
-    print(f"[startup] LLM provider: {settings.DEFAULT_LLM_MODEL}")
+    print("[startup] Database connection OK ✓")
     print("[startup] Application ready ✓")
 
     yield  # <-- application runs here
 
     # --- shutdown ---
-    print("[shutdown] Closing Supabase client …")
-    await close_supabase_client()
+    print("[shutdown] Disposing DB engine …")
+    await engine.dispose()
     print("[shutdown] Goodbye.")
 
 
 # ---------------------------------------------------------------------------
 # Application factory
 # ---------------------------------------------------------------------------
-
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="IELTS Writing Practice API",
+        title="E-Commerce Ordering & Payment API",
         description=(
-            "Backend for the IELTS Writing Practice App. "
-            "Provides writing sessions, AI-powered feedback (grammar, ideas, "
-            "vocabulary), band scoring, and subscription management."
+            "Backend for managing users, products, orders, and payments "
+            "with support for multiple payment providers (Stripe, bKash)."
         ),
         version="0.1.0",
         docs_url="/docs" if settings.ENV != "production" else None,
@@ -72,34 +69,38 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # -----------------------------------------------------------------------
+    # -------------------------------------------------------------------
     # CORS
-    # -----------------------------------------------------------------------
+    # -------------------------------------------------------------------
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,   # e.g. ["http://localhost:5173"]
+        allow_origins=settings.CORS_ORIGINS,  # e.g. ["http://localhost:5173"]
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    # -----------------------------------------------------------------------
+    # -------------------------------------------------------------------
     # Routers
-    # -----------------------------------------------------------------------
+    # -------------------------------------------------------------------
     app.include_router(api_router, prefix="/api/v1")
 
-    # -----------------------------------------------------------------------
-    # Health check  (unauthenticated, used by load-balancers / uptime monitors)
-    # -----------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    # Health check (unauthenticated, used by load balancers / uptime monitors)
+    # Uses get_session via Depends — the SAME dependency your routes use —
+    # to prove the DB is reachable through the normal request path.
+    # -------------------------------------------------------------------
     @app.get("/health", tags=["health"], include_in_schema=False)
-    async def health_check() -> JSONResponse:
+    async def health_check(
+            session: AsyncSession = Depends(get_session),
+    ) -> JSONResponse:
+        await session.execute(text("SELECT 1"))
         return JSONResponse({"status": "ok", "env": settings.ENV})
 
     return app
 
 
 # ---------------------------------------------------------------------------
-# Module-level app instance  (picked up by Uvicorn / Gunicorn)
+# Module-level app instance (picked up by Uvicorn / Gunicorn)
 # ---------------------------------------------------------------------------
-
 app: FastAPI = create_app()

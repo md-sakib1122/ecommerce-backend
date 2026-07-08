@@ -1,13 +1,39 @@
-fastapi
-uvicorn[standard]
-sqlmodel
-alembic
-psycopg2-binary
-redis
-pydantic-settings
-python-jose[cryptography]
-passlib[bcrypt]
-stripe
-httpx
-pytest
-pytest-asyncio
+# ── Web framework ─────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0          # ASGI server; [standard] pulls in uvloop, httptools for perf
+
+# ── ORM / DB models ───────────────────────────
+sqlmodel==0.0.22                   # SQLAlchemy + Pydantic combined
+alembic==1.14.0                    # migrations
+
+# ── Postgres drivers ──────────────────────────
+asyncpg==0.30.0                    # async driver, used by the app + alembic env.py online mode
+psycopg2-binary==2.9.10            # sync driver — needed if you ever run alembic in sync mode
+                                    # or use scripts/seeders that aren't async
+
+# ── Settings / config ─────────────────────────
+pydantic-settings==2.7.1           # for app/core/config.py (Settings class)
+python-dotenv==1.0.1                # loads .env in local dev
+
+# ── Auth / security ────────────────────────────
+python-jose[cryptography]==3.3.0   # JWT create/verify (app/core/security.py)
+passlib[bcrypt]==1.7.4              # password hashing
+python-multipart==0.0.20            # required by FastAPI for form data / OAuth2PasswordRequestForm
+
+# ── Payments ───────────────────────────────────
+stripe==11.4.1                     # Stripe SDK for stripe_provider.py
+httpx==0.28.1                      # for bkash_provider.py — bKash has no official SDK,
+                                    # you'll hit their REST API directly with httpx (async-friendly)
+
+# ── Caching ─────────────────────────────────────
+redis==5.2.1                       # for cache/redis_client.py — this package includes
+                                    # both sync and async (redis.asyncio) clients
+
+# ── Testing ─────────────────────────────────────
+pytest==8.3.4
+pytest-asyncio==0.25.0             # needed for async test functions with FastAPI TestClient
+httpx==0.28.1                      # also used as the test client transport (already listed above)
+
+# ── Dev / lint (optional but recommended) ───────
+ruff==0.8.6                        # fast linter, replaces flake8+isort+black mostly
+mypy==1.14.1                       # optional, if you want type checking on services/

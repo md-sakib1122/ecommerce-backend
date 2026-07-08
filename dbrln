@@ -1,0 +1,101 @@
+# E-commerce DB Schema Reference
+
+Postgres. All money columns are DECIMAL(12,2) — never treat as float.
+Six tables: users, categories, products, orders, order_items, payments.
+
+## Tables (DDL-equivalent)
+
+```sql
+-- USERS
+users (
+  id               SERIAL PRIMARY KEY,
+  email            VARCHAR(255) NOT NULL UNIQUE,   -- indexed, login key
+  hashed_password  VARCHAR NOT NULL,
+  full_name        VARCHAR(255),
+  is_admin         BOOLEAN NOT NULL DEFAULT FALSE,
+  is_active        BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at       TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMP NOT NULL DEFAULT now()
+)
+
+-- CATEGORIES (self-referential tree)
+categories (
+  id          SERIAL PRIMARY KEY,
+  name        VARCHAR(150) NOT NULL,               -- indexed
+  parent_id   INT REFERENCES categories(id),        -- NULL = root category, indexed
+  created_at  TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMP NOT NULL DEFAULT now()
+)
+
+-- PRODUCTS
+products (
+  id           SERIAL PRIMARY KEY,
+  name         VARCHAR(255) NOT NULL,               -- indexed
+  sku          VARCHAR(64) NOT NULL UNIQUE,          -- indexed
+  description  TEXT,
+  price        DECIMAL(12,2) NOT NULL CHECK (price > 0),
+  stock        INT NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  status       VARCHAR NOT NULL DEFAULT 'active',    -- enum: active | inactive, indexed
+  category_id  INT REFERENCES categories(id),        -- indexed
+  created_at   TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMP NOT NULL DEFAULT now()
+)
+
+-- ORDERS
+orders (
+  id            SERIAL PRIMARY KEY,
+  user_id       INT NOT NULL REFERENCES users(id),  -- indexed
+  total_amount  DECIMAL(12,2) NOT NULL DEFAULT 0,    -- = SUM(order_items.subtotal), server-computed
+  status        VARCHAR NOT NULL DEFAULT 'pending',  -- enum: pending | paid | canceled, indexed
+  created_at    TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMP NOT NULL DEFAULT now()
+)
+
+-- ORDER_ITEMS (join: order <-> product, with historical price snapshot)
+order_items (
+  id          SERIAL PRIMARY KEY,
+  order_id    INT NOT NULL REFERENCES orders(id),   -- indexed, ON DELETE CASCADE
+  product_id  INT NOT NULL REFERENCES products(id),  -- indexed
+  quantity    INT NOT NULL CHECK (quantity > 0),
+  price       DECIMAL(12,2) NOT NULL,  -- SNAPSHOT of products.price at order time, NOT live
+  subtotal    DECIMAL(12,2) NOT NULL   -- = quantity * price
+)
+
+-- PAYMENTS
+payments (
+  id              SERIAL PRIMARY KEY,
+  order_id        INT NOT NULL REFERENCES orders(id),  -- indexed, one order can have multiple attempts
+  provider        VARCHAR NOT NULL,                     -- enum: stripe | bkash, indexed
+  transaction_id  VARCHAR(255) NOT NULL UNIQUE,          -- indexed, dedupe key for webhook retries
+  status          VARCHAR NOT NULL DEFAULT 'pending',    -- enum: pending | success | failed, indexed
+  raw_response    JSON,                                  -- full provider payload, audit-only
+  created_at      TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMP NOT NULL DEFAULT now()
+)
+```
+
+## Relationships
+
+- `users (1) ──< (many) orders` via `orders.user_id`
+- `categories (1) ──< (many) categories` via `categories.parent_id` (self-referential tree; NULL parent = root)
+- `categories (1) ──< (many) products` via `products.category_id`
+- `orders (1) ──< (many) order_items` via `order_items.order_id` (cascade delete)
+- `products (1) ──< (many) order_items` via `order_items.product_id`
+- `orders (1) ──< (many) payments` via `payments.order_id` — an order can have several payment *attempts* (e.g. retry after a failed Stripe charge), so don't assume 1:1. The "current" payment is generally the latest row by `created_at`, or the one with `status = 'success'`.
+
+## Business rules that affect query correctness
+
+1. **Money math is server-side only.** `order_items.price`/`subtotal` and `orders.total_amount` are written once by app logic, not recomputed live from `products.price`. If asked "what did this order cost," use `order_items`, never join live to `products.price`.
+2. **Stock only decrements on successful payment**, not on order creation. `orders.status = 'pending'` doesn't mean stock was reserved.
+3. **Category tree is recursive**, arbitrary depth. Use a recursive CTE, e.g.:
+```sql
+   WITH RECURSIVE tree AS (
+     SELECT id, name, parent_id FROM categories WHERE id = :root_id
+     UNION ALL
+     SELECT c.id, c.name, c.parent_id
+     FROM categories c JOIN tree t ON c.parent_id = t.id
+   )
+   SELECT * FROM tree;
+```
+4. **`payments.transaction_id` is the idempotency key** for webhook handling — upserts/dedupe should key off it, not `order_id`.
+5. Enums are stored as plain strings (Postgres `VARCHAR`, app-level enum, not a native Postgres `ENUM` type) — allowed values: `products.status ∈ {active, inactive}`, `orders.status ∈ {pending, paid, canceled}`, `payments.provider ∈ {stripe, bkash}`, `payments.status ∈ {pending, success, failed}`.
