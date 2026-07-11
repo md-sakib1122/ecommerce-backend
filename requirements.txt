@@ -13,11 +13,13 @@ psycopg2-binary==2.9.10            # sync driver — needed if you ever run alem
 
 # ── Settings / config ─────────────────────────
 pydantic-settings==2.7.1           # for app/core/config.py (Settings class)
+email-validator==2.2.0             # backs pydantic EmailStr in app/schemas/user.py
 python-dotenv==1.0.1                # loads .env in local dev
 
 # ── Auth / security ────────────────────────────
 python-jose[cryptography]==3.3.0   # JWT create/verify (app/core/security.py)
-passlib[bcrypt]==1.7.4              # password hashing
+passlib==1.7.4                     # password hashing (bcrypt pinned below)
+bcrypt==4.0.1                      # passlib 1.7.4 breaks on bcrypt >=4.1 (backend self-test raises)
 python-multipart==0.0.20            # required by FastAPI for form data / OAuth2PasswordRequestForm
 
 # ── Payments ───────────────────────────────────
@@ -33,7 +35,11 @@ redis==5.2.1                       # for cache/redis_client.py — this package 
 pytest==8.3.4
 pytest-asyncio==0.25.0             # needed for async test functions with FastAPI TestClient
 httpx==0.28.1                      # also used as the test client transport (already listed above)
+aiosqlite==0.20.0                  # async SQLite driver for the test DB (tests run without Postgres)
 
 # ── Dev / lint (optional but recommended) ───────
 ruff==0.8.6                        # fast linter, replaces flake8+isort+black mostly
 mypy==1.14.1                       # optional, if you want type checking on services/
+
+# ── Docs (optional) ─────────────────────────────
+python-docx==1.1.2                 # generates docs/API_Documentation.docx (see docs/generate_api_docs.py)

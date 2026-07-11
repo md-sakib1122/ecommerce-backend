@@ -1,7 +1,7 @@
 # Pydantic request/response models for Product
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -42,26 +42,3 @@ class ProductRead(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class CategoryCreate(BaseModel):
-    name: str = Field(max_length=150)
-    parent_id: Optional[int] = None
-
-
-class CategoryRead(BaseModel):
-    id: int
-    name: str
-    parent_id: Optional[int]
-
-    class Config:
-        from_attributes = True
-
-
-class CategoryTreeNode(CategoryRead):
-    """Recursive shape returned by the cached DFS category tree endpoint."""
-
-    children: List["CategoryTreeNode"] = []
-
-
-CategoryTreeNode.model_rebuild()

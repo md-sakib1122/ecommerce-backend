@@ -46,7 +46,15 @@ class StripeWebhookPayload(BaseModel):
     data: Dict[str, Any]
 
 
+# class BkashWebhookPayload(BaseModel):
+#     paymentID: str
+#     status: str
+#     trxID: Optional[str] = None
+
+
 class BkashWebhookPayload(BaseModel):
     paymentID: str
     status: str
     trxID: Optional[str] = None
+    signature: Optional[str] = None
+    apiVersion: Optional[str] = None

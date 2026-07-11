@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # --- Database (Postgres, direct — db/session.py uses this) ---
     DATABASE_URL: str                  # e.g. postgresql+asyncpg://user:pass@localhost:5432/ecommerce
-
+    FRONTEND_URL: str = "http://localhost:3000"
     # --- Auth / JWT (core/security.py) ---
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     BKASH_USERNAME: str
     BKASH_PASSWORD: str
     BKASH_BASE_URL: str = "https://tokenized.sandbox.bka.sh/v1.2.0-beta"  # sandbox by default
+    # Where bKash redirects the payer after checkout; our callback executes the payment.
+    BKASH_CALLBACK_URL: str = "https://proven-vocally-skinhead.ngrok-free.dev/api/v1/payments/bkash/callback"
 
     # --- Order / business rules ---
     DEFAULT_CURRENCY: str = "BDT"

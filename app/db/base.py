@@ -7,8 +7,12 @@ imported somewhere in the process. Alembic's env.py imports THIS file
 (not the individual model files), so every model must be imported here
 or its table will silently be skipped during `alembic revision --autogenerate`.
 
-This file is NOT used by the running FastAPI app — routes/services import
-models directly from app.models.*. This file exists purely for Alembic.
+The running FastAPI app also relies on this module: app/db/session.py imports
+it so that every model class is registered on the SQLAlchemy mapper registry
+before the first ORM query. The models use string forward-refs in their
+relationships (e.g. Order.items -> "OrderItem"), which only resolve if all
+referenced classes have been imported. Without this, the first ORM request
+would fail with an "failed to locate a name" mapper error.
 """
 
 from sqlmodel import SQLModel

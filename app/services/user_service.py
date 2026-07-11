@@ -1,90 +1,121 @@
-# class UserService
-# app/utils/role_guard.py
-from fastapi import Depends, HTTPException, status, Request
-from app.auth.jwt_handler import verify_token
+"""OOP business logic for users.
 
-from datetime import datetime
-from app.core.databse import db
-from app.auth.password_utils import hash_password
+`UserService` owns everything the user-management feature needs: registration,
+authentication, profile updates, and the read queries that back a user's own
+orders/payments views plus the admin user-management endpoints.
+"""
+from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
 
-# JWT verification dependency
-def get_current_user(request: Request):
-    token = request.cookies.get("access_token")  # from HttpOnly cookie
-    if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+from app.auth.password_utils import hash_password, verify_password
+from app.models.order import Order
+from app.models.payment import Payment
+from app.models.user import User
+from app.schemas.user import UserCreate, UserUpdate
 
-    payload = verify_token(token)
-    if not payload or "error" in payload:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=payload.get("error", "Invalid token"))
-    print("this is payload",payload)
-    return payload
 
-def require_role(roles: list[str]):
-    def role_checker(user=Depends(get_current_user)):
-        user_role = user.get("role")
-        if user_role not in roles:
+class UserService:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    # --- lookups -------------------------------------------------------------
+    async def get_by_id(self, user_id: int) -> User | None:
+        return await self.session.get(User, user_id)
+
+    async def get_by_email(self, email: str) -> User | None:
+        result = await self.session.execute(select(User).where(User.email == email))
+        return result.scalar_one_or_none()
+
+    # --- registration / auth -------------------------------------------------
+    async def register(self, data: UserCreate) -> User:
+        """Create a new general user. Email must be unique (409 otherwise)."""
+        if await self.get_by_email(data.email) is not None:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Forbidden: requires one of {roles} roles"
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A user with this email already exists.",
+            )
+
+        user = User(
+            email=data.email,
+            hashed_password=hash_password(data.password),
+            full_name=data.full_name,
+        )
+        self.session.add(user)
+        try:
+            await self.session.commit()
+        except IntegrityError:
+            # Lost the race against a concurrent insert on the unique email.
+            await self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A user with this email already exists.",
+            )
+        await self.session.refresh(user)
+        return user
+
+    async def authenticate(self, email: str, password: str) -> User | None:
+        """Return the user iff the credentials are valid and the account is active."""
+        user = await self.get_by_email(email)
+        if user is None or not verify_password(password, user.hashed_password):
+            return None
+        if not user.is_active:
+            return None
+        return user
+
+    # --- profile -------------------------------------------------------------
+    async def update_profile(self, user: User, data: UserUpdate) -> User:
+        """Self-service update. Only `full_name` may be changed by the owner;
+        `is_active` is reserved for admins (see `set_active`)."""
+        if data.full_name is not None:
+            user.full_name = data.full_name
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user
+
+    # --- own orders / payments ----------------------------------------------
+    async def list_orders(self, user_id: int) -> list[Order]:
+        result = await self.session.execute(
+            select(Order)
+            .where(Order.user_id == user_id)
+            .options(selectinload(Order.items))
+            .order_by(Order.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def list_payments(self, user_id: int) -> list[Payment]:
+        # Payment has no user_id; ownership is enforced by joining through Order.
+        result = await self.session.execute(
+            select(Payment)
+            .join(Order, Payment.order_id == Order.id)
+            .where(Order.user_id == user_id)
+            .order_by(Payment.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    # --- admin ---------------------------------------------------------------
+    async def list_users(self, skip: int = 0, limit: int = 100) -> list[User]:
+        result = await self.session.execute(
+            select(User).order_by(User.id).offset(skip).limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def get_user_or_404(self, user_id: int) -> User:
+        user = await self.get_by_id(user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User {user_id} not found.",
             )
         return user
-    return role_checker
 
-
-
-
-
-async def create_user(data: dict):
-    collection = db["users"]
-    hashed_pw = hash_password(data["password"])
-    print("create user data",data)
-    document = {}
-
-    if data["role"] in ["group", "company"]:
-        document = {
-            "name": data["name"],
-            "email": data["email"],
-            "password": hashed_pw,
-            "role": data["role"],
-            "is_verified":False,
-            #company
-            "parent": data.get("parent"),
-            "department": [],
-            "subdepartment": [],
-            "company_code": data.get("company_code"),
-            "address": data.get("address"),
-            "city": data.get("city"),
-            "fax":data.get("fax"),
-            "phone": data.get("phone"),
-            "tax_no": data.get("tax_no"),
-            "country": data.get("country"),
-            "abbreviate_name": data.get("abbreviate_name"),
-            #company
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow(),
-        }
-
-    elif data["role"] == "employee":
-        document = {
-            "name": data["name"],
-            "email": data["email"],
-            "password": hashed_pw,
-            "is_verified": False,
-            "role": data["role"],
-            "company_id": data.get("company_id"),
-            "emp_id": data.get("emp_id"),
-            "group_id": data.get("group_id"),
-            "userSubDept" :data.get("userSubDept"),
-            "userDept":data.get("userDept"),
-            "lon": data.get("lon"),
-            "lat": data.get("lat"),
-            "locations" : data.get("locations", []),
-            "radius": data.get("radius"),
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow(),
-        }
-
-
-    result = await collection.insert_one(document)
-
-    return str(result.inserted_id)
+    async def set_active(self, user_id: int, is_active: bool) -> User:
+        user = await self.get_user_or_404(user_id)
+        user.is_active = is_active
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user
