@@ -1,0 +1,2245 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "E-Commerce Ordering & Payment API",
+        "description": "Backend for managing users, products, orders, and payments with support for multiple payment providers (Stripe, bKash).",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/v1/auth/register": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register",
+                "description": "Register a new general (non-admin) user. Email must be unique.",
+                "operationId": "register_api_v1_auth_register_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login",
+                "description": "Exchange email + password for a Bearer access token.",
+                "operationId": "login_api_v1_auth_login_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserLogin"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Token"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Read Own Profile",
+                "operationId": "read_own_profile_api_v1_users_me_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update Own Profile",
+                "operationId": "update_own_profile_api_v1_users_me_patch",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserUpdate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/me/orders": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Read Own Orders",
+                "operationId": "read_own_orders_api_v1_users_me_orders_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/OrderRead"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Read Own Orders Api V1 Users Me Orders Get"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/me/payments": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Read Own Payments",
+                "operationId": "read_own_payments_api_v1_users_me_payments_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/PaymentRead"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Read Own Payments Api V1 Users Me Payments Get"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "List Users",
+                "operationId": "list_users_api_v1_users_get",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "skip",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Skip"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/UserRead"
+                                    },
+                                    "title": "Response List Users Api V1 Users Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user_id}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get User",
+                "operationId": "get_user_api_v1_users__user_id__get",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "User Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Set User Active",
+                "description": "Admin activate/deactivate a user. `is_active` is taken from the body;\n`full_name` is ignored here (that's the user's own via PATCH /users/me).",
+                "operationId": "set_user_active_api_v1_users__user_id__patch",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "User Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/categories": {
+            "get": {
+                "tags": [
+                    "categories"
+                ],
+                "summary": "List Categories",
+                "description": "Flat list of categories (paginated).",
+                "operationId": "list_categories_api_v1_categories_get",
+                "parameters": [
+                    {
+                        "name": "skip",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Skip"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CategoryRead"
+                                    },
+                                    "title": "Response List Categories Api V1 Categories Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Create Category",
+                "operationId": "create_category_api_v1_categories_post",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CategoryCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/categories/tree": {
+            "get": {
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Get Category Tree",
+                "description": "DFS-rendered category tree (Redis-cached). Pass `?root_id=` for one subtree.",
+                "operationId": "get_category_tree_api_v1_categories_tree_get",
+                "parameters": [
+                    {
+                        "name": "root_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Root Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CategoryTreeNode"
+                                    },
+                                    "title": "Response Get Category Tree Api V1 Categories Tree Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/categories/{category_id}": {
+            "get": {
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Get Category",
+                "operationId": "get_category_api_v1_categories__category_id__get",
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Category Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Update Category",
+                "operationId": "update_category_api_v1_categories__category_id__patch",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Category Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CategoryUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Delete Category",
+                "description": "Delete a category. Returns 409 if it still has subcategories or products.",
+                "operationId": "delete_category_api_v1_categories__category_id__delete",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Category Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/categories/{category_id}/products": {
+            "get": {
+                "tags": [
+                    "categories"
+                ],
+                "summary": "List Category Products",
+                "description": "Active products in this category and every descendant category (DFS branch).",
+                "operationId": "list_category_products_api_v1_categories__category_id__products_get",
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Category Id"
+                        }
+                    },
+                    {
+                        "name": "skip",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Skip"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProductRead"
+                                    },
+                                    "title": "Response List Category Products Api V1 Categories  Category Id  Products Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/products": {
+            "get": {
+                "tags": [
+                    "products"
+                ],
+                "summary": "List Products",
+                "description": "Browse products. Defaults to active-only; `?status=inactive` overrides.\nOptional `category_id` and `search` (name substring) filters.",
+                "operationId": "list_products_api_v1_products_get",
+                "parameters": [
+                    {
+                        "name": "skip",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Skip"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/ProductStatus",
+                            "default": "active"
+                        }
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Category Id"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProductRead"
+                                    },
+                                    "title": "Response List Products Api V1 Products Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "products"
+                ],
+                "summary": "Create Product",
+                "operationId": "create_product_api_v1_products_post",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProductCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/products/{product_id}": {
+            "get": {
+                "tags": [
+                    "products"
+                ],
+                "summary": "Get Product",
+                "operationId": "get_product_api_v1_products__product_id__get",
+                "parameters": [
+                    {
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Product Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "products"
+                ],
+                "summary": "Update Product",
+                "operationId": "update_product_api_v1_products__product_id__patch",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Product Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProductUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "products"
+                ],
+                "summary": "Delete Product",
+                "description": "Soft delete — marks the product inactive (row and order history retained).",
+                "operationId": "delete_product_api_v1_products__product_id__delete",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Product Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/products/{product_id}/recommendations": {
+            "get": {
+                "tags": [
+                    "products"
+                ],
+                "summary": "Recommend Products",
+                "description": "Related products, found by DFS over the product's category branch.",
+                "operationId": "recommend_products_api_v1_products__product_id__recommendations_get",
+                "parameters": [
+                    {
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Product Id"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProductRead"
+                                    },
+                                    "title": "Response Recommend Products Api V1 Products  Product Id  Recommendations Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders": {
+            "post": {
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Create Order",
+                "description": "Place an order for one or more products. Totals are computed server-side;\nthe order starts `pending` and reserves no stock.",
+                "operationId": "create_order_api_v1_orders_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OrderCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/orders/{order_id}": {
+            "get": {
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Get Order",
+                "operationId": "get_order_api_v1_orders__order_id__get",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Order Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders/{order_id}/cancel": {
+            "post": {
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Cancel Order",
+                "description": "Cancel one of your own orders (only while it is still `pending`).",
+                "operationId": "cancel_order_api_v1_orders__order_id__cancel_post",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Order Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders/{order_id}/checkout": {
+            "post": {
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Checkout",
+                "description": "Initiate payment for one of your `pending` orders with the chosen provider.\nReturns the provider-specific payload the client needs to finish paying\n(Stripe `client_secret`, or the bKash redirect URL).",
+                "operationId": "checkout_api_v1_orders__order_id__checkout_post",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Order Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PaymentInitiate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/StripeCheckoutResponse"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/BkashCheckoutResponse"
+                                        }
+                                    ],
+                                    "title": "Response Checkout Api V1 Orders  Order Id  Checkout Post"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/stripe/webhook": {
+            "post": {
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Stripe Webhook",
+                "description": "Stripe payment webhook. The raw body + `Stripe-Signature` header are\nverified inside the strategy; on `payment_intent.succeeded` the order is\nmarked paid and stock reduced. Safe to retry (idempotent).",
+                "operationId": "stripe_webhook_api_v1_payments_stripe_webhook_post",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object",
+                                    "title": "Response Stripe Webhook Api V1 Payments Stripe Webhook Post"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/bkash/callback": {
+            "get": {
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Bkash Callback",
+                "operationId": "bkash_callback_api_v1_payments_bkash_callback_get",
+                "parameters": [
+                    {
+                        "name": "paymentID",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Paymentid"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Status"
+                        }
+                    },
+                    {
+                        "name": "trxID",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Trxid"
+                        }
+                    },
+                    {
+                        "name": "signature",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Signature"
+                        }
+                    },
+                    {
+                        "name": "apiVersion",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Apiversion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/{payment_id}": {
+            "get": {
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Get Payment",
+                "operationId": "get_payment_api_v1_payments__payment_id__get",
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "payment_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Payment Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "BkashCheckoutResponse": {
+                "properties": {
+                    "bkash_url": {
+                        "type": "string",
+                        "title": "Bkash Url"
+                    },
+                    "payment_id": {
+                        "type": "string",
+                        "title": "Payment Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "bkash_url",
+                    "payment_id"
+                ],
+                "title": "BkashCheckoutResponse",
+                "description": "Returned to the client so it can redirect the user into bKash's flow."
+            },
+            "CategoryCreate": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 150,
+                        "title": "Name"
+                    },
+                    "parent_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Parent Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "title": "CategoryCreate"
+            },
+            "CategoryRead": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "parent_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Parent Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "parent_id"
+                ],
+                "title": "CategoryRead"
+            },
+            "CategoryTreeNode": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "parent_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Parent Id"
+                    },
+                    "children": {
+                        "items": {
+                            "$ref": "#/components/schemas/CategoryTreeNode"
+                        },
+                        "type": "array",
+                        "title": "Children",
+                        "default": []
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "parent_id"
+                ],
+                "title": "CategoryTreeNode",
+                "description": "Recursive shape returned by the cached DFS category tree endpoint."
+            },
+            "CategoryUpdate": {
+                "properties": {
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 150
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name"
+                    },
+                    "parent_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Parent Id"
+                    }
+                },
+                "type": "object",
+                "title": "CategoryUpdate",
+                "description": "All fields optional — admin PATCH endpoint.\n\nFields are applied via `model_dump(exclude_unset=True)`, so passing\n`parent_id: null` explicitly re-parents to a root, while omitting it\nleaves the parent unchanged."
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "OrderCreate": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemCreate"
+                        },
+                        "type": "array",
+                        "minItems": 1,
+                        "title": "Items"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items"
+                ],
+                "title": "OrderCreate"
+            },
+            "OrderItemCreate": {
+                "properties": {
+                    "product_id": {
+                        "type": "integer",
+                        "title": "Product Id"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "title": "Quantity"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "product_id",
+                    "quantity"
+                ],
+                "title": "OrderItemCreate",
+                "description": "Client only sends product_id + quantity. price/subtotal are never\ntrusted from the client — OrderService looks up the live Product.price\nserver-side and computes both deterministically."
+            },
+            "OrderItemRead": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "product_id": {
+                        "type": "integer",
+                        "title": "Product Id"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "title": "Quantity"
+                    },
+                    "price": {
+                        "type": "string",
+                        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                        "title": "Price"
+                    },
+                    "subtotal": {
+                        "type": "string",
+                        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                        "title": "Subtotal"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "product_id",
+                    "quantity",
+                    "price",
+                    "subtotal"
+                ],
+                "title": "OrderItemRead"
+            },
+            "OrderRead": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "title": "User Id"
+                    },
+                    "total_amount": {
+                        "type": "string",
+                        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                        "title": "Total Amount"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/OrderStatus"
+                    },
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "user_id",
+                    "total_amount",
+                    "status",
+                    "items",
+                    "created_at"
+                ],
+                "title": "OrderRead"
+            },
+            "OrderStatus": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "paid",
+                    "canceled"
+                ],
+                "title": "OrderStatus"
+            },
+            "PaymentInitiate": {
+                "properties": {
+                    "order_id": {
+                        "type": "integer",
+                        "title": "Order Id"
+                    },
+                    "provider": {
+                        "$ref": "#/components/schemas/PaymentProvider"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "order_id",
+                    "provider"
+                ],
+                "title": "PaymentInitiate",
+                "description": "Body for POST /orders/{order_id}/checkout — user picks a provider."
+            },
+            "PaymentProvider": {
+                "type": "string",
+                "enum": [
+                    "stripe",
+                    "bkash"
+                ],
+                "title": "PaymentProvider"
+            },
+            "PaymentRead": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "order_id": {
+                        "type": "integer",
+                        "title": "Order Id"
+                    },
+                    "provider": {
+                        "$ref": "#/components/schemas/PaymentProvider"
+                    },
+                    "transaction_id": {
+                        "type": "string",
+                        "title": "Transaction Id"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/PaymentStatus"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "order_id",
+                    "provider",
+                    "transaction_id",
+                    "status",
+                    "created_at"
+                ],
+                "title": "PaymentRead"
+            },
+            "PaymentStatus": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "success",
+                    "failed"
+                ],
+                "title": "PaymentStatus"
+            },
+            "ProductCreate": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "title": "Name"
+                    },
+                    "sku": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "title": "Sku"
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "price": {
+                        "anyOf": [
+                            {
+                                "type": "number",
+                                "exclusiveMinimum": 0
+                            },
+                            {
+                                "type": "string",
+                                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                            }
+                        ],
+                        "title": "Price"
+                    },
+                    "stock": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "title": "Stock",
+                        "default": 0
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/ProductStatus",
+                        "default": "active"
+                    },
+                    "category_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Category Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "sku",
+                    "price"
+                ],
+                "title": "ProductCreate"
+            },
+            "ProductRead": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "sku": {
+                        "type": "string",
+                        "title": "Sku"
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "price": {
+                        "type": "string",
+                        "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                        "title": "Price"
+                    },
+                    "stock": {
+                        "type": "integer",
+                        "title": "Stock"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/ProductStatus"
+                    },
+                    "category_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Category Id"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "sku",
+                    "description",
+                    "price",
+                    "stock",
+                    "status",
+                    "category_id",
+                    "created_at"
+                ],
+                "title": "ProductRead"
+            },
+            "ProductStatus": {
+                "type": "string",
+                "enum": [
+                    "active",
+                    "inactive"
+                ],
+                "title": "ProductStatus"
+            },
+            "ProductUpdate": {
+                "properties": {
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 255
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name"
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "price": {
+                        "anyOf": [
+                            {
+                                "type": "number",
+                                "exclusiveMinimum": 0
+                            },
+                            {
+                                "type": "string",
+                                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Price"
+                    },
+                    "stock": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Stock"
+                    },
+                    "status": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductStatus"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "category_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Category Id"
+                    }
+                },
+                "type": "object",
+                "title": "ProductUpdate",
+                "description": "All fields optional — admin PATCH endpoint."
+            },
+            "StripeCheckoutResponse": {
+                "properties": {
+                    "client_secret": {
+                        "type": "string",
+                        "title": "Client Secret"
+                    },
+                    "payment_intent_id": {
+                        "type": "string",
+                        "title": "Payment Intent Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "client_secret",
+                    "payment_intent_id"
+                ],
+                "title": "StripeCheckoutResponse",
+                "description": "Returned to the client so it can complete the Stripe client-side confirm step."
+            },
+            "Token": {
+                "properties": {
+                    "access_token": {
+                        "type": "string",
+                        "title": "Access Token"
+                    },
+                    "token_type": {
+                        "type": "string",
+                        "title": "Token Type",
+                        "default": "bearer"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "access_token"
+                ],
+                "title": "Token"
+            },
+            "UserCreate": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 8,
+                        "title": "Password"
+                    },
+                    "full_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Full Name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "title": "UserCreate"
+            },
+            "UserLogin": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "title": "Password"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "title": "UserLogin"
+            },
+            "UserRead": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "full_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Full Name"
+                    },
+                    "is_admin": {
+                        "type": "boolean",
+                        "title": "Is Admin"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "email",
+                    "full_name",
+                    "is_admin",
+                    "is_active",
+                    "created_at"
+                ],
+                "title": "UserRead"
+            },
+            "UserUpdate": {
+                "properties": {
+                    "full_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Full Name"
+                    },
+                    "is_active": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Active"
+                    }
+                },
+                "type": "object",
+                "title": "UserUpdate"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        },
+        "securitySchemes": {
+            "OAuth2PasswordBearer": {
+                "type": "oauth2",
+                "flows": {
+                    "password": {
+                        "scopes": {},
+                        "tokenUrl": "/api/v1/auth/login"
+                    }
+                }
+            }
+        }
+    }
+}
