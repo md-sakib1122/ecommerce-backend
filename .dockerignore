@@ -1,0 +1,13 @@
+.git
+.idea
+.env
+app.zip
+docs/
+tests/
+docker/
+dbrln
+__pycache__/
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
