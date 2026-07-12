@@ -1,8 +1,7 @@
 # E-Commerce Ordering & Payment System
 
 A backend system for managing users, products, orders, and payments with support for
-multiple payment providers (Stripe, bKash). Built for the Backend Engineer take-home
-assessment.
+multiple payment providers (Stripe, bKash).
 
 ## Table of Contents
 
